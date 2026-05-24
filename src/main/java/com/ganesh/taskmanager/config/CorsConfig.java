@@ -2,36 +2,28 @@ package com.ganesh.taskmanager.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
-import java.util.List;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class CorsConfig {
 
     @Bean
-    public CorsFilter corsFilter() {
+    public WebMvcConfigurer corsConfigurer() {
 
-        CorsConfiguration config = new CorsConfiguration();
+        return new WebMvcConfigurer() {
 
-        config.setAllowedOriginPatterns(
-                List.of("http://localhost:*")
-        );
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
 
-        config.addAllowedHeader("*");
-
-        config.addAllowedMethod("*");
-
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return new CorsFilter(source);
+                registry.addMapping("/**")
+                        .allowedOrigins(
+                                "https://clinquant-queijadas-bea6c4.netlify.app"
+                        )
+                        .allowedMethods("*")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
     }
 }
