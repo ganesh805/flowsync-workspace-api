@@ -9,6 +9,8 @@ public class CompanyRegisterDto {
 
     private String companyCode;
 
+    private String companyDomain;
+
     private String adminName;
 
     private String email;

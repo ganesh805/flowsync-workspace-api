@@ -302,6 +302,21 @@ public class AdminService {
                         )
                 );
 
+        String companyDomain = user.getOrganization()
+                .getCompanyDomain()
+                .toLowerCase()
+                .trim();
+
+        if (updatedUser.getEmail() == null
+                || !updatedUser.getEmail()
+                .toLowerCase()
+                .endsWith("@" + companyDomain)) {
+
+            throw new RuntimeException(
+                    "Employee email must belong to @" + companyDomain
+            );
+        }
+
         user.setName(
                 updatedUser.getName()
         );
@@ -309,15 +324,12 @@ public class AdminService {
         user.setUsername(
                 updatedUser.getUsername()
         );
-
         user.setEmail(
-                updatedUser.getEmail()
+                updatedUser.getEmail().toLowerCase().trim()
         );
-
         user.setDesignation(
                 updatedUser.getDesignation()
         );
-
         return userRepository.save(user);
     }
     public User createEmployee(
@@ -329,28 +341,37 @@ public class AdminService {
     ) {
 
         User admin = userRepository
-
                 .findByEmail(adminEmail)
-
                 .orElseThrow();
-
+        String companyDomain = admin.getOrganization()
+                .getCompanyDomain()
+                .toLowerCase()
+                .trim();
+        if (employee.getEmail() == null
+                || !employee.getEmail()
+                .toLowerCase()
+                .endsWith("@" + companyDomain)) {
+            throw new RuntimeException(
+                    "Employee email must belong to @" + companyDomain
+            );
+        }
         employee.setPassword(
-
                 passwordEncoder.encode(
                         employee.getPassword()
                 )
         );
-
+        employee.setEmail(
+                employee.getEmail()
+                        .toLowerCase()
+                        .trim()
+        );
         employee.setRole(Role.MEMBER);
-
         employee.setOrganization(
                 admin.getOrganization()
         );
-
         employee.setCreatedAt(
                 LocalDateTime.now()
         );
-
         return userRepository.save(employee);
     }
     private User getCurrentUser() {

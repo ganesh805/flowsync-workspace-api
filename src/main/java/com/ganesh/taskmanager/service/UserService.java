@@ -33,31 +33,31 @@ public class UserService {
             RegisterRequest request
     ) {
 
-        if(userRepository
-                .findByEmail(
-                        request.getEmail()
-                )
-                .isPresent()) {
-
-            throw new RuntimeException(
-                    "Email already exists"
-            );
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
         }
 
         Organization organization =
-
                 organizationRepository
-
-                        .findByCompanyCode(
-                                request.getCompanyCode()
-                        )
-
+                        .findByCompanyCode(request.getCompanyCode())
                         .orElseThrow(() ->
-
-                                new RuntimeException(
-                                        "Invalid Company Code"
-                                )
+                                new RuntimeException("Invalid Company Code")
                         );
+
+        String companyDomain = organization
+                .getCompanyDomain()
+                .toLowerCase()
+                .trim();
+
+        String email = request.getEmail()
+                .toLowerCase()
+                .trim();
+
+        if (!email.endsWith("@" + companyDomain)) {
+            throw new RuntimeException(
+                    "Email must belong to @" + companyDomain
+            );
+        }
 
         User user = User.builder()
 
@@ -65,14 +65,11 @@ public class UserService {
 
                 .username(request.getUsername())
 
-                .designation(
-                        request.getDesignation()
-                )
+                .designation(request.getDesignation())
 
-                .email(request.getEmail())
+                .email(email)
 
                 .password(
-
                         passwordEncoder.encode(
                                 request.getPassword()
                         )
@@ -82,9 +79,7 @@ public class UserService {
 
                 .organization(organization)
 
-                .createdAt(
-                        LocalDateTime.now()
-                )
+                .createdAt(LocalDateTime.now())
 
                 .build();
 
@@ -111,32 +106,42 @@ public class UserService {
 
     public AuthResponse loginUser(LoginRequest request) {
 
+        System.out.println("========== LOGIN REQUEST ==========");
+        System.out.println("Email Received : " + request.getEmail());
+        System.out.println("Password Entered : " + request.getPassword());
+
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password")
-                );
+                .orElseThrow(() -> {
+                    System.out.println("User not found in database");
+                    return new RuntimeException("Invalid email or password");
+                });
+
+        System.out.println("User Found");
+        System.out.println("Database Email : " + user.getEmail());
+        System.out.println("Encoded Password : " + user.getPassword());
 
         boolean matches = passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         );
 
+        System.out.println("Password Matches : " + matches);
+
         if (!matches) {
+            System.out.println("Password verification failed");
             throw new RuntimeException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(user.getEmail());
 
+        System.out.println("JWT Generated Successfully");
+        System.out.println("==============================");
+
         return new AuthResponse(
-
                 token,
-
                 user.getName(),
-
                 user.getRole().name(),
-
-                user.getOrganization()
-                        .getCompanyName()
+                user.getOrganization().getCompanyName()
         );
     }
     public String registerCompany(
@@ -145,36 +150,62 @@ public class UserService {
 
     ) {
 
-        Organization organization =
+        if (organizationRepository.findByCompanyCode(dto.getCompanyCode()).isPresent()) {
+            throw new RuntimeException("Company Code already exists");
+        }
 
-                Organization.builder()
+        if (organizationRepository.findByCompanyDomain(dto.getCompanyDomain()).isPresent()) {
+            throw new RuntimeException("Company Domain already exists");
+        }
 
-                        .companyName(
-                                dto.getCompanyName()
-                        )
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new RuntimeException("Admin email already exists");
+        }
 
-                        .companyCode(
-                                dto.getCompanyCode()
-                        )
+        String companyDomain = dto.getCompanyDomain()
+                .trim()
+                .toLowerCase();
 
-                        .createdAt(
-                                LocalDateTime.now()
-                        )
+        String adminEmail = dto.getEmail()
+                .trim()
+                .toLowerCase();
 
-                        .build();
+        if (!adminEmail.endsWith("@" + companyDomain)) {
+            throw new RuntimeException(
+                    "Admin email must belong to @" + companyDomain
+            );
+        }
+
+        Organization organization = Organization.builder()
+
+                .companyName(
+                        dto.getCompanyName().trim()
+                )
+
+                .companyCode(
+                        dto.getCompanyCode().trim().toUpperCase()
+                )
+
+                .companyDomain(
+                        companyDomain
+                )
+
+                .createdAt(
+                        LocalDateTime.now()
+                )
+
+                .build();
 
         Organization savedOrg =
-                organizationRepository
-                        .save(organization);
+                organizationRepository.save(organization);
 
         User admin = User.builder()
 
                 .name(dto.getAdminName())
 
-                .email(dto.getEmail())
+                .email(adminEmail)
 
                 .password(
-
                         passwordEncoder.encode(
                                 dto.getPassword()
                         )
@@ -184,11 +215,13 @@ public class UserService {
 
                 .organization(savedOrg)
 
+                .createdAt(LocalDateTime.now())
+
                 .build();
 
         userRepository.save(admin);
 
-        return "Company Registered";
+        return "Company Registered Successfully";
     }
 
     public String changePassword(
