@@ -133,7 +133,6 @@ public class AdminController {
     // UPDATE ROLE
 
     @PutMapping("/users/{id}/role")
-
     public User updateRole(
 
             @PathVariable Long id,
