@@ -21,7 +21,8 @@ public class CorsConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "https://flowsync-workspace.netlify.app"
+                "https://flowsync-workspace.netlify.app",
+                "https://flowsync-workspace-ui.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
