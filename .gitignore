@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local H2 Database ###
+flowsyncdb.*
+*.db
+

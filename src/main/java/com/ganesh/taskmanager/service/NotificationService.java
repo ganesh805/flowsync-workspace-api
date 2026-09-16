@@ -61,8 +61,18 @@ public class NotificationService {
                 );
     }
 
-    // MARK READ
+    // MARK SINGLE READ
+    public void markAsRead(Long id, User user) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification Not Found"));
+        if (!notification.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+        notification.setRead(true);
+        notificationRepository.save(notification);
+    }
 
+    // MARK ALL READ
     public void markAllAsRead(
             User user
     ) {

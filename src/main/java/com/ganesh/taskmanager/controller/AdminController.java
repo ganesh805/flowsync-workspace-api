@@ -20,7 +20,7 @@ import java.util.List;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
 
 public class AdminController {
 
@@ -143,5 +143,20 @@ public class AdminController {
 
         return adminService
                 .updateUserRole(id, role);
+    }
+
+    // UPDATE DESIGNATION
+
+    @PutMapping("/users/{id}/designation")
+    public User updateDesignation(
+            @PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body,
+            @RequestParam(required = false) String designation
+    ) {
+        String newDesignation = designation;
+        if (body != null && body.containsKey("designation")) {
+            newDesignation = body.get("designation");
+        }
+        return adminService.updateUserDesignation(id, newDesignation);
     }
 }

@@ -7,6 +7,7 @@ import com.ganesh.taskmanager.entity.User;
 
 import com.ganesh.taskmanager.enums.Status;
 
+import com.ganesh.taskmanager.repository.TaskCommentRepository;
 import com.ganesh.taskmanager.repository.TaskRepository;
 import com.ganesh.taskmanager.repository.UserRepository;
 
@@ -39,25 +40,12 @@ public class TaskService {
     // =========================
 
     private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginInput = authentication.getName();
 
-        Authentication authentication =
-
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String email =
-                authentication.getName();
-
-        return userRepository
-                .findByEmail(email)
-
-                .orElseThrow(() ->
-
-                        new RuntimeException(
-                                "User Not Found"
-                        )
-                );
+        return userRepository.findByEmailIgnoreCase(loginInput)
+                .or(() -> userRepository.findByUsernameIgnoreCase(loginInput))
+                .orElseThrow(() -> new RuntimeException("User Not Found"));
     }
 
     // =========================
@@ -65,24 +53,12 @@ public class TaskService {
     // =========================
 
     public Task createTask(
-
             TaskRequestDto dto,
-
             String email
-
     ) {
-
-        User currentUser =
-
-                userRepository
-                        .findByEmail(email)
-
-                        .orElseThrow(() ->
-
-                                new RuntimeException(
-                                        "User Not Found"
-                                )
-                        );
+        User currentUser = userRepository.findByEmailIgnoreCase(email)
+                .or(() -> userRepository.findByUsernameIgnoreCase(email))
+                .orElseThrow(() -> new RuntimeException("User Not Found"));
 
         User assignedUser =
 
@@ -332,6 +308,7 @@ public class TaskService {
     // =========================
 
     public void deleteTask(Long id) {
+        User currentUser = getCurrentUser();
 
         Task task =
                 taskRepository.findById(id)
@@ -342,6 +319,10 @@ public class TaskService {
                                         "Task Not Found"
                                 )
                         );
+
+        if (task.getOrganization() == null || !task.getOrganization().getId().equals(currentUser.getOrganization().getId())) {
+            throw new RuntimeException("Unauthorized: Task does not belong to your organization");
+        }
 
         String taskTitle =
                 task.getTitle();
@@ -370,6 +351,7 @@ public class TaskService {
             Task updatedTask
 
     ) {
+        User currentUser = getCurrentUser();
 
         Task existingTask =
 
@@ -381,6 +363,10 @@ public class TaskService {
                                         "Task Not Found"
                                 )
                         );
+
+        if (existingTask.getOrganization() == null || !existingTask.getOrganization().getId().equals(currentUser.getOrganization().getId())) {
+            throw new RuntimeException("Unauthorized: Task does not belong to your organization");
+        }
 
         existingTask.setTitle(
                 updatedTask.getTitle()
@@ -421,8 +407,9 @@ public class TaskService {
     public Task getTaskById(
             Long id
     ) {
+        User currentUser = getCurrentUser();
 
-        return taskRepository
+        Task task = taskRepository
                 .findById(id)
                 .orElseThrow(() ->
 
@@ -430,5 +417,42 @@ public class TaskService {
                                 "Task Not Found"
                         )
                 );
+
+        if (task.getOrganization() == null || !task.getOrganization().getId().equals(currentUser.getOrganization().getId())) {
+            throw new RuntimeException("Unauthorized: Task does not belong to your organization");
+        }
+
+        return task;
+    }
+
+    private final TaskCommentRepository taskCommentRepository;
+
+    public List<com.ganesh.taskmanager.entity.TaskComment> getTaskComments(Long taskId) {
+        Task task = getTaskById(taskId);
+        return taskCommentRepository.findByTaskOrderByCreatedAtAsc(task);
+    }
+
+    public com.ganesh.taskmanager.entity.TaskComment addTaskComment(Long taskId, String message) {
+        User currentUser = getCurrentUser();
+        Task task = getTaskById(taskId);
+
+        com.ganesh.taskmanager.entity.TaskComment comment = com.ganesh.taskmanager.entity.TaskComment.builder()
+                .task(task)
+                .user(currentUser)
+                .message(message)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
+
+        com.ganesh.taskmanager.entity.TaskComment saved = taskCommentRepository.save(comment);
+
+        User notifyUser = (task.getAssignedTo() != null && currentUser.getId().equals(task.getAssignedTo().getId())) ? task.getCreatedBy() : task.getAssignedTo();
+        if (notifyUser != null && !notifyUser.getId().equals(currentUser.getId())) {
+            notificationService.sendNotification(
+                    notifyUser,
+                    currentUser.getName() + " commented on task '" + task.getTitle() + "': \"" + message + "\""
+            );
+        }
+
+        return saved;
     }
 }

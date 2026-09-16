@@ -93,13 +93,23 @@ public class TaskController {
     }
     // GET SINGLE TASK
     @GetMapping("/{id}")
-
-    public Task getTaskById(
-
-            @PathVariable Long id
-
-    ) {
-
+    public Task getTaskById(@PathVariable Long id) {
         return taskService.getTaskById(id);
+    }
+
+    // GET TASK COMMENTS
+    @GetMapping("/{id}/comments")
+    public List<com.ganesh.taskmanager.entity.TaskComment> getTaskComments(@PathVariable Long id) {
+        return taskService.getTaskComments(id);
+    }
+
+    // ADD TASK COMMENT
+    @PostMapping("/{id}/comments")
+    public com.ganesh.taskmanager.entity.TaskComment addTaskComment(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body
+    ) {
+        String message = body.get("message");
+        return taskService.addTaskComment(id, message);
     }
 }

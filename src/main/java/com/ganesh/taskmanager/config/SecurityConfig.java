@@ -43,12 +43,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users/login",
                                 "/api/users/register",
-                                "/api/users/register-company"
+                                "/api/users/register-company",
+                                "/ws/**"
                         ).permitAll()
 
                         .requestMatchers(
                                 "/api/admin/**"
-                        ).hasRole("ADMIN")
+                        ).hasAnyRole("ADMIN", "OWNER")
 
                         .requestMatchers(
                                 "/api/tasks/**"

@@ -29,9 +29,27 @@ public class Organization {
     @Column(nullable = false)
     private String companyDomain;
 
+    @Column(columnDefinition = "TEXT")
+    private String logoUrl;
+
+    @Column(length = 1000)
+    private String description;
+
+    private String industry;
+
+    private String contactEmail;
+
+    private String contactPhone;
+
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "organization")
     @JsonIgnore
     private List<User> users;
+
+    @OneToMany(mappedBy = "organization")
+    @JsonIgnore
+    private List<Team> teams;
 }

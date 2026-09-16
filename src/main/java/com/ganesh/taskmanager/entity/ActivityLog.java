@@ -28,6 +28,11 @@ public class ActivityLog {
 
     private LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Organization organization;
+
     @PrePersist
     public void prePersist() {
 
